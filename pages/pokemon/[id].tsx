@@ -4,21 +4,22 @@ import { Button, Card, Container, Grid, Image, Text } from "@nextui-org/react";
 import confetti from "canvas-confetti";
 import { Layout } from "../../components/layouts";
 import { Pokemon } from "../../interfaces";
-import { getPojemonInfo, localFavorities } from "../../utils";
+import { getPokemonInfo, localFavorities } from "../../utils";
 
 interface Props {
   pokemon: Pokemon;
 }
 
 const PokemonPage: NextPage<Props> = ({ pokemon }) => {
-
-  const [isInFavorities, setIsInFavorities] = useState(localFavorities.existInFavorites(pokemon.id));
+  const [isInFavorities, setIsInFavorities] = useState(
+    localFavorities.existInFavorites(pokemon.id)
+  );
 
   const onToggleFavorite = () => {
     localFavorities.toogleFavorite(pokemon.id);
     setIsInFavorities(!isInFavorities);
 
-    if (isInFavorities) return
+    if (isInFavorities) return;
 
     confetti({
       zIndex: 999,
@@ -28,7 +29,7 @@ const PokemonPage: NextPage<Props> = ({ pokemon }) => {
       origin: {
         x: 1,
         y: 0,
-      }
+      },
     });
   };
 
@@ -60,8 +61,14 @@ const PokemonPage: NextPage<Props> = ({ pokemon }) => {
                 {pokemon.name}
               </Text>
 
-              <Button color="gradient" ghost={ !isInFavorities } onClick={onToggleFavorite}>
-                { isInFavorities ? "Eliminar de favoritos" : "Agregar a favoritos" }
+              <Button
+                color="gradient"
+                ghost={!isInFavorities}
+                onClick={onToggleFavorite}
+              >
+                {isInFavorities
+                  ? "Eliminar de favoritos"
+                  : "Agregar a favoritos"}
               </Button>
             </Card.Header>
 
@@ -111,17 +118,30 @@ export const getStaticPaths: GetStaticPaths = async (ctx) => {
     paths: pokemons151.map((id) => ({
       params: { id },
     })),
-    fallback: false,
+    // le permite pasar a la siguiente pagina mientras se genera el contenido
+    fallback: "blocking",
   };
 };
 
 export const getStaticProps: GetStaticProps = async ({ params }) => {
   const { id } = params as { id: string };
 
+  const pokemon = await getPokemonInfo(id);
+
+  if (!pokemon) {
+    return {
+      redirect: {
+        destination: "/",
+        permanent: false,
+      }
+    };
+  }
+
   return {
     props: {
-      pokemon: await getPojemonInfo(id)
+      pokemon,
     },
+    revalidate: 86400, // 60 * 60 * 24, // 24 hours
   };
 };
 
